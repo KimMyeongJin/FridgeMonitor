@@ -2,6 +2,8 @@ import { loadSettings, getThresholdsForDevice, toDisplayTemp } from './settings.
 import { getSelectedDevice } from './devices.js';
 import { t, getLocale } from './i18n.js';
 
+const MAX_CHART_POINTS = 500;
+
 let chartMeta = null;
 let lastChartData = null;
 let lastPeriodHours = 24;
@@ -9,6 +11,30 @@ let resizeObserverInitialized = false;
 let touchStartX = 0;
 let touchStartY = 0;
 let isDraggingChart = false;
+
+// 대량 데이터 다운샘플링 (LTTB 간소화)
+function downsample(data, maxPoints) {
+  if (data.length <= maxPoints) return data;
+  const result = [data[0]];
+  const bucketSize = (data.length - 2) / (maxPoints - 2);
+  for (let i = 1; i < maxPoints - 1; i++) {
+    const start = Math.floor((i - 1) * bucketSize) + 1;
+    const end = Math.min(Math.floor(i * bucketSize) + 1, data.length - 1);
+    let maxArea = -1;
+    let pick = start;
+    const prev = result[result.length - 1];
+    for (let j = start; j < end; j++) {
+      const area = Math.abs(
+        (prev.time.getTime() - data[j].time.getTime()) * (data[end]?.temperature || 0) -
+        (prev.time.getTime() - (data[end]?.time.getTime() || 0)) * data[j].temperature
+      );
+      if (area > maxArea) { maxArea = area; pick = j; }
+    }
+    result.push(data[pick]);
+  }
+  result.push(data[data.length - 1]);
+  return result;
+}
 
 // ===== 스무스 커브 헬퍼 =====
 function drawSmoothLine(ctx, points, close) {
@@ -59,7 +85,12 @@ export function drawChart(data, periodHours = 24) {
   const chartW = w - padding.left - padding.right;
   const chartH = h - padding.top - padding.bottom;
 
-  const sorted = [...data].reverse();
+  // ARIA 접근성
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', `${t('app.chart.title') || 'Temperature chart'}, ${periodHours}h`);
+
+  const rawSorted = [...data].reverse();
+  const sorted = downsample(rawSorted, MAX_CHART_POINTS);
   const temps = sorted.map(d => toDisplayTemp(d.temperature, settings));
 
   const selectedDevice = getSelectedDevice();

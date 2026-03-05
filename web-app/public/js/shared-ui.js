@@ -51,37 +51,37 @@ export function renderSettingsPanel({ fullSettings = true } = {}) {
         <div class="setting-group-title" data-i18n="settings.alertGroup">${t('settings.alertGroup')}</div>
         <div id="globalThresholdInputs">
           <div class="setting-row">
-            <span class="setting-label" data-i18n="settings.alertHigh">${t('settings.alertHigh')}</span>
+            <label for="alertHigh" class="setting-label" data-i18n="settings.alertHigh">${t('settings.alertHigh')}</label>
             <input type="number" class="setting-input" id="alertHigh" step="0.5" value="8">
           </div>
           <div class="setting-row">
-            <span class="setting-label" data-i18n="settings.alertLow">${t('settings.alertLow')}</span>
+            <label for="alertLow" class="setting-label" data-i18n="settings.alertLow">${t('settings.alertLow')}</label>
             <input type="number" class="setting-input" id="alertLow" step="0.5" value="-25">
           </div>
         </div>
         <div id="deviceThresholdContainer"></div>
         <div class="setting-row">
-          <span class="setting-label" data-i18n="settings.alertEnabled">${t('settings.alertEnabled')}</span>
-          <button class="toggle-switch" id="alertEnabled" type="button" role="switch" aria-checked="false"></button>
+          <span class="setting-label" id="label-alertEnabled" data-i18n="settings.alertEnabled">${t('settings.alertEnabled')}</span>
+          <button class="toggle-switch" id="alertEnabled" type="button" role="switch" aria-checked="false" aria-labelledby="label-alertEnabled"></button>
         </div>
         <div class="setting-row">
-          <span class="setting-label" data-i18n="settings.notifEnabled">${t('settings.notifEnabled')}</span>
-          <button class="toggle-switch" id="notifEnabled" type="button" role="switch" aria-checked="false"></button>
+          <span class="setting-label" id="label-notifEnabled" data-i18n="settings.notifEnabled">${t('settings.notifEnabled')}</span>
+          <button class="toggle-switch" id="notifEnabled" type="button" role="switch" aria-checked="false" aria-labelledby="label-notifEnabled"></button>
         </div>
         <div class="setting-row">
-          <span class="setting-label" data-i18n="settings.soundEnabled">${t('settings.soundEnabled')}</span>
-          <button class="toggle-switch" id="soundEnabled" type="button" role="switch" aria-checked="false"></button>
+          <span class="setting-label" id="label-soundEnabled" data-i18n="settings.soundEnabled">${t('settings.soundEnabled')}</span>
+          <button class="toggle-switch" id="soundEnabled" type="button" role="switch" aria-checked="false" aria-labelledby="label-soundEnabled"></button>
         </div>
       </div>
       <div class="setting-group">
         <div class="setting-group-title" data-i18n="settings.chartGroup">${t('settings.chartGroup')}</div>
         <div class="setting-row">
-          <span class="setting-label" data-i18n="settings.showThresholdLines">${t('settings.showThresholdLines')}</span>
-          <button class="toggle-switch on" id="showThresholdLines" type="button" role="switch" aria-checked="true"></button>
+          <span class="setting-label" id="label-showThresholdLines" data-i18n="settings.showThresholdLines">${t('settings.showThresholdLines')}</span>
+          <button class="toggle-switch on" id="showThresholdLines" type="button" role="switch" aria-checked="true" aria-labelledby="label-showThresholdLines"></button>
         </div>
         <div class="setting-row">
-          <span class="setting-label" data-i18n="settings.tempUnit">${t('settings.tempUnit')}</span>
-          <button class="toggle-switch" id="tempUnitSwitch" type="button" role="switch" aria-checked="false"></button>
+          <span class="setting-label" id="label-tempUnit" data-i18n="settings.tempUnit">${t('settings.tempUnit')}</span>
+          <button class="toggle-switch" id="tempUnitSwitch" type="button" role="switch" aria-checked="false" aria-labelledby="label-tempUnit"></button>
         </div>
       </div>`;
   }
@@ -96,8 +96,8 @@ export function renderSettingsPanel({ fullSettings = true } = {}) {
       <div class="setting-group">
         <div class="setting-group-title" data-i18n="settings.themeGroup">${t('settings.themeGroup')}</div>
         <div class="setting-row">
-          <span class="setting-label" data-i18n="settings.darkMode">${t('settings.darkMode')}</span>
-          <button class="toggle-switch" id="themeSwitch" type="button" role="switch" aria-checked="false"></button>
+          <span class="setting-label" id="label-darkMode" data-i18n="settings.darkMode">${t('settings.darkMode')}</span>
+          <button class="toggle-switch" id="themeSwitch" type="button" role="switch" aria-checked="false" aria-labelledby="label-darkMode"></button>
         </div>
       </div>
       <div class="setting-group">

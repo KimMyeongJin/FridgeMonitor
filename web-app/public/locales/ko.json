@@ -398,5 +398,12 @@
   "app.story.falling": "온도가 하강 추세입니다.",
   "app.story.volatile": "온도 변동이 큰 상태입니다.",
   "app.story.delta": "변화량: {val}°",
-  "app.story.alertFreq": "· 알림 {n}회 발생"
+  "app.story.alertFreq": "· 알림 {n}회 발생",
+
+  "app.trend.up": "상승",
+  "app.trend.down": "하강",
+  "app.trend.stable": "안정",
+
+  "chat.changeNickname": "닉네임 변경",
+  "app.connection.cacheAge": "마지막 업데이트: {time}"
 }

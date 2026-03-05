@@ -76,6 +76,8 @@ export function initSettingsPanel(options = {}) {
     panel.classList.add('open');
     overlay.classList.add('open');
     syncUI();
+    const firstInput = panel.querySelector('input, button:not(.settings-close)');
+    if (firstInput) firstInput.focus();
   }
 
   function close() {
@@ -156,11 +158,11 @@ export function initSettingsPanel(options = {}) {
           <div class="device-threshold-section">
             <div class="setting-device-label">${label}</div>
             <div class="setting-row">
-              <span class="setting-label">${t('settings.alertHigh')}</span>
+              <label for="dt-high-${deviceId}" class="setting-label">${t('settings.alertHigh')}</label>
               <input type="number" class="setting-input" id="dt-high-${deviceId}" step="0.5" value="${thresholds.alertHigh}">
             </div>
             <div class="setting-row">
-              <span class="setting-label">${t('settings.alertLow')}</span>
+              <label for="dt-low-${deviceId}" class="setting-label">${t('settings.alertLow')}</label>
               <input type="number" class="setting-input" id="dt-low-${deviceId}" step="0.5" value="${thresholds.alertLow}">
             </div>
           </div>

@@ -5,7 +5,9 @@
   "id": "/",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
   "orientation": "portrait",
+  "categories": ["productivity", "utilities"],
   "background_color": "#0f172a",
   "theme_color": "#3b82f6",
   "icons": [

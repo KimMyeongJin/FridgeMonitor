@@ -143,6 +143,10 @@ function renderChatPanel() {
       </div>
       <button class="chat-close" id="chatClose" aria-label="Close">&times;</button>
     </div>
+    <div class="chat-nickname-bar" id="chatNicknameBar">
+      <span class="chat-nickname-label">${nickname}</span>
+      <button class="chat-nickname-edit" id="chatNicknameEdit" aria-label="${t('chat.changeNickname') || 'Change nickname'}" title="${t('chat.changeNickname') || '닉네임 변경'}">&#9998;</button>
+    </div>
     <div class="chat-messages" id="chatMessages">
       <div class="chat-empty" data-i18n="chat.noMessages">${t('chat.noMessages') || ''}</div>
     </div>
@@ -157,6 +161,31 @@ function renderChatPanel() {
   document.body.appendChild(panel);
 
   document.getElementById('chatClose').addEventListener('click', closeChat);
+  document.getElementById('chatNicknameEdit').addEventListener('click', () => {
+    const bar = document.getElementById('chatNicknameBar');
+    const label = bar.querySelector('.chat-nickname-label');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'chat-nickname-input';
+    input.value = nickname;
+    input.maxLength = 20;
+    label.replaceWith(input);
+    input.focus();
+    input.select();
+    const save = () => {
+      const val = input.value.trim();
+      if (val && val.length <= 20) {
+        nickname = val;
+        localStorage.setItem(NICKNAME_KEY, nickname);
+      }
+      const newLabel = document.createElement('span');
+      newLabel.className = 'chat-nickname-label';
+      newLabel.textContent = nickname;
+      input.replaceWith(newLabel);
+    };
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+  });
   document.getElementById('chatSend').addEventListener('click', sendMessage);
   document.getElementById('chatInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.isComposing) sendMessage();
@@ -175,7 +204,9 @@ function openChat() {
   unreadCount = 0;
   updateBadge();
   document.getElementById('chatPanel').classList.add('open');
-  document.getElementById('chatFab').classList.add('hidden');
+  const fab = document.getElementById('chatFab');
+  fab.classList.add('hidden');
+  fab.setAttribute('aria-pressed', 'true');
   document.getElementById('chatInput').focus();
 
   const container = document.getElementById('chatMessages');
@@ -185,7 +216,9 @@ function openChat() {
 function closeChat() {
   chatOpen = false;
   document.getElementById('chatPanel').classList.remove('open');
-  document.getElementById('chatFab').classList.remove('hidden');
+  const fab = document.getElementById('chatFab');
+  fab.classList.remove('hidden');
+  fab.setAttribute('aria-pressed', 'false');
 }
 
 // ===== Firestore 리스너 =====
@@ -198,31 +231,57 @@ function startChatListener() {
     limit(MSG_LIMIT)
   );
 
+  let isFirstSnapshot = true;
+
   unsubChat = onSnapshot(q, (snapshot) => {
     const container = document.getElementById('chatMessages');
 
     if (snapshot.empty) {
       container.innerHTML = `<div class="chat-empty">${t('chat.noMessages') || ''}</div>`;
       lastSeenMessageCount = 0;
+      isFirstSnapshot = true;
       return;
     }
 
     const wasNearBottom = isNearBottom(container);
 
-    container.innerHTML = '';
-    let lastDateStr = '';
-    snapshot.forEach((docSnap) => {
-      const msg = docSnap.data();
-      if (msg.created_at) {
-        const msgDate = msg.created_at.toDate();
-        const dateStr = formatDateSeparator(msgDate);
-        if (dateStr !== lastDateStr) {
-          container.appendChild(createDateSeparator(dateStr));
-          lastDateStr = dateStr;
+    // 첫 스냅샷은 전체 렌더링, 이후에는 증분 업데이트
+    if (isFirstSnapshot) {
+      container.innerHTML = '';
+      let lastDateStr = '';
+      snapshot.forEach((docSnap) => {
+        const msg = docSnap.data();
+        if (msg.created_at) {
+          const msgDate = msg.created_at.toDate();
+          const dateStr = formatDateSeparator(msgDate);
+          if (dateStr !== lastDateStr) {
+            container.appendChild(createDateSeparator(dateStr));
+            lastDateStr = dateStr;
+          }
+        }
+        container.appendChild(createMessageBubble(msg, docSnap.id));
+      });
+      isFirstSnapshot = false;
+    } else {
+      const changes = snapshot.docChanges();
+      for (const change of changes) {
+        if (change.type === 'added') {
+          const msg = change.doc.data();
+          if (msg.created_at) {
+            const msgDate = msg.created_at.toDate();
+            const dateStr = formatDateSeparator(msgDate);
+            const lastSep = container.querySelector('.chat-date-separator:last-of-type');
+            if (!lastSep || lastSep.textContent !== dateStr) {
+              container.appendChild(createDateSeparator(dateStr));
+            }
+          }
+          container.appendChild(createMessageBubble(msg, change.doc.id));
+        } else if (change.type === 'removed') {
+          const el = container.querySelector(`[data-msg-id="${change.doc.id}"]`);
+          if (el) el.remove();
         }
       }
-      container.appendChild(createMessageBubble(msg));
-    });
+    }
 
     if (!chatOpen) {
       const addedCount = snapshot.docChanges().filter(c => c.type === 'added').length;
@@ -242,10 +301,11 @@ function startChatListener() {
 }
 
 // ===== 메시지 버블 =====
-function createMessageBubble(msg) {
+function createMessageBubble(msg, msgId) {
   const isOwn = msg.uid === currentUid;
   const bubble = document.createElement('div');
   bubble.className = `chat-bubble ${isOwn ? 'chat-bubble-own' : 'chat-bubble-other'}`;
+  if (msgId) bubble.setAttribute('data-msg-id', msgId);
 
   const timeStr = msg.created_at
     ? msg.created_at.toDate().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })

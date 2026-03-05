@@ -19,7 +19,8 @@
       "WebFetch(domain:fuselabcreative.com)",
       "WebFetch(domain:fridge-monitor-9a844.web.app)",
       "Bash(powershell:*)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Bash(zip:*)"
     ]
   }
 }

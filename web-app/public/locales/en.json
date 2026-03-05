@@ -398,5 +398,12 @@
   "app.story.falling": "Temperature is trending downward.",
   "app.story.volatile": "Temperature has been fluctuating.",
   "app.story.delta": "Change: {val}°",
-  "app.story.alertFreq": "· {n} alert(s) triggered"
+  "app.story.alertFreq": "· {n} alert(s) triggered",
+
+  "app.trend.up": "Rising",
+  "app.trend.down": "Falling",
+  "app.trend.stable": "Stable",
+
+  "chat.changeNickname": "Change nickname",
+  "app.connection.cacheAge": "Last updated: {time}"
 }

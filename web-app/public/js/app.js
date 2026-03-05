@@ -8,6 +8,19 @@ import { initI18n, t, getLocale, setLang } from './i18n.js';
 import { renderBottomTabBar, renderSettingsPanel } from './shared-ui.js';
 import { initChat } from './chat.js';
 
+// ===== 상수 =====
+const ALERT_THROTTLE_MS = 60000;
+const QUERY_LIMITS = { 6: 400, 24: 1500, 72: 3000, 168: 5000 };
+const RENDER_INTERVAL_MS = 60000;
+const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+const DATA_CACHE_KEY = 'fridgeDataCache';
+const DATA_CACHE_MAX = 200;
+const ALERT_LOG_KEY = 'fridgeAlertLog';
+const ALERT_LOG_MAX = 50;
+const PWA_DISMISS_KEY = 'pwaDismissed';
+const PWA_REDISPLAY_MS = 7 * 24 * 60 * 60 * 1000;
+const TOAST_DURATION_MS = 3000;
+
 // ===== 토스트 알림 시스템 =====
 let toastContainer = null;
 
@@ -21,7 +34,7 @@ export function showToast(msg, type = 'info') {
   toast.className = `toast toast-${type}`;
   toast.textContent = msg;
   toastContainer.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+  setTimeout(() => toast.remove(), TOAST_DURATION_MS);
 }
 
 // ===== PWA 설치 프롬프트 =====
@@ -30,7 +43,10 @@ let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  showInstallBanner();
+  const dismissedTime = Number(localStorage.getItem(PWA_DISMISS_KEY)) || 0;
+  if (Date.now() - dismissedTime > PWA_REDISPLAY_MS) {
+    showInstallBanner();
+  }
 });
 
 function showInstallBanner() {
@@ -53,26 +69,25 @@ function showInstallBanner() {
   });
   document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
     banner.remove();
-    localStorage.setItem('pwaDismissed', Date.now().toString());
+    localStorage.setItem(PWA_DISMISS_KEY, Date.now().toString());
   });
 }
 
 // ===== 상태 =====
-let allData = [];
-let currentPeriod = 24;
-let previousTemp = null;
-let unsubscribe = null;
-let isConnected = true;
-let lastAlertTime = 0;
-let isOfflineMode = false;
-let historyLimit = 10;
-
-// ===== 오프라인 캐시 =====
-const DATA_CACHE_KEY = 'fridgeDataCache';
+const state = {
+  allData: [],
+  currentPeriod: 24,
+  previousTemp: null,
+  unsub: null,
+  isConnected: true,
+  lastAlertTime: 0,
+  isOfflineMode: false,
+  historyLimit: 10
+};
 
 function cacheData(data) {
   try {
-    const toCache = data.slice(0, 200).map(d => ({
+    const toCache = data.slice(0, DATA_CACHE_MAX).map(d => ({
       temperature: d.temperature,
       time: d.time.getTime(),
       alert: d.alert,
@@ -181,13 +196,10 @@ function getRelativeTime(date) {
 
 function getFilteredData(hours) {
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-  return allData.filter(d => d.time >= cutoff);
+  return state.allData.filter(d => d.time >= cutoff);
 }
 
 // ===== 알림 이력 =====
-const ALERT_LOG_KEY = 'fridgeAlertLog';
-const ALERT_LOG_MAX = 50;
-
 function saveAlertLog(entry) {
   try {
     const logs = JSON.parse(localStorage.getItem(ALERT_LOG_KEY) || '[]');
@@ -233,6 +245,7 @@ function playAlertSound() {
     gain.gain.setValueAtTime(0.3, ctx.currentTime + 0.50);
     gain.gain.setValueAtTime(0, ctx.currentTime + 0.65);
     osc.stop(ctx.currentTime + 0.7);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
   } catch { /* 소리 재생 실패 무시 */ }
 }
 
@@ -240,14 +253,14 @@ function checkAndAlert(temp, deviceId) {
   const settings = loadSettings();
   if (!settings.alertEnabled) return;
   const now = Date.now();
-  if (now - lastAlertTime < 60000) return;
+  if (now - state.lastAlertTime < ALERT_THROTTLE_MS) return;
 
   const thresholds = getThresholdsForDevice(settings, deviceId);
   const isHigh = temp > thresholds.alertHigh;
   const isLow = temp < thresholds.alertLow;
 
   if (isHigh || isLow) {
-    lastAlertTime = now;
+    state.lastAlertTime = now;
     const msg = isHigh
       ? t('app.alert.highExceed', { temp: temp.toFixed(1), limit: thresholds.alertHigh })
       : t('app.alert.lowBelow', { temp: temp.toFixed(1), limit: thresholds.alertLow });
@@ -265,8 +278,8 @@ function checkAndAlert(temp, deviceId) {
 function loadFromCache() {
   const cached = loadCachedData();
   if (!cached) return;
-  isOfflineMode = true;
-  allData = cached.data;
+  state.isOfflineMode = true;
+  state.allData = cached.data;
   render();
 }
 
@@ -288,9 +301,9 @@ function renderConnectionBanner() {
 function updateConnectionUI() {
   const banner = document.getElementById('connection-banner');
   if (!banner) return;
-  const online = navigator.onLine && isConnected;
+  const online = navigator.onLine && state.isConnected;
 
-  if (isOfflineMode) {
+  if (state.isOfflineMode) {
     const cached = loadCachedData();
     const timeStr = cached ? new Date(cached.ts).toLocaleTimeString() : '';
     banner.innerHTML = `<span class="dot dot-off"></span>${t('app.connection.offline', { time: timeStr })}`;
@@ -303,9 +316,9 @@ function updateConnectionUI() {
   }
 }
 
-window.addEventListener('online', () => { isConnected = true; updateConnectionUI(); });
-window.addEventListener('offline', () => { isConnected = false; updateConnectionUI(); });
-setInterval(() => { if (allData.length > 0) render(); }, 60000);
+window.addEventListener('online', () => { state.isConnected = true; updateConnectionUI(); });
+window.addEventListener('offline', () => { state.isConnected = false; updateConnectionUI(); });
+setInterval(() => { if (state.allData.length > 0) render(); }, RENDER_INTERVAL_MS);
 
 // ===== Firebase 리스너 =====
 async function discoverDevices() {
@@ -316,17 +329,17 @@ async function discoverDevices() {
 }
 
 function getLimitForPeriod(hours) {
-  if (hours <= 6) return 400;
-  if (hours <= 24) return 1500;
-  if (hours <= 72) return 3000;
-  return 5000;
+  if (hours <= 6) return QUERY_LIMITS[6];
+  if (hours <= 24) return QUERY_LIMITS[24];
+  if (hours <= 72) return QUERY_LIMITS[72];
+  return QUERY_LIMITS[168];
 }
 
 function startRealtimeListener() {
-  if (unsubscribe) unsubscribe();
+  if (state.unsub) state.unsub();
 
-  const docLimit = getLimitForPeriod(currentPeriod);
-  const cutoff = Timestamp.fromDate(new Date(Date.now() - currentPeriod * 60 * 60 * 1000));
+  const docLimit = getLimitForPeriod(state.currentPeriod);
+  const cutoff = Timestamp.fromDate(new Date(Date.now() - state.currentPeriod * 60 * 60 * 1000));
 
   const constraints = [
     collection(db, "temperatures"),
@@ -342,28 +355,28 @@ function startRealtimeListener() {
 
   const q = query(...constraints);
 
-  unsubscribe = onSnapshot(q, (snapshot) => {
-    isConnected = true;
-    isOfflineMode = false;
+  state.unsub = onSnapshot(q, (snapshot) => {
+    state.isConnected = true;
+    state.isOfflineMode = false;
     updateConnectionUI();
-    allData = [];
+    state.allData = [];
     snapshot.forEach(doc => {
       const d = doc.data();
-      allData.push({
+      state.allData.push({
         temperature: d.temperature,
         time: d.recorded_at.toDate(),
         alert: d.alert || false,
         device_id: d.device_id
       });
     });
-    console.log('[App] onSnapshot received:', allData.length, 'docs');
-    cacheData(allData);
+    console.log('[App] onSnapshot received:', state.allData.length, 'docs');
+    cacheData(state.allData);
     try { render(); } catch (e) { console.error('[App] render() error:', e); }
   }, (err) => {
     console.error('[App] onSnapshot error:', err);
-    isConnected = false;
+    state.isConnected = false;
     updateConnectionUI();
-    if (allData.length === 0) loadFromCache();
+    if (state.allData.length === 0) loadFromCache();
   });
 }
 
@@ -511,14 +524,14 @@ function ensureDOM() {
   document.getElementById('r-chart-period').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-period]');
     if (btn) {
-      currentPeriod = parseInt(btn.dataset.period);
-      historyLimit = 10;
+      state.currentPeriod = parseInt(btn.dataset.period);
+      state.historyLimit = 10;
       startRealtimeListener();
     }
   });
   document.getElementById('r-export-btn').addEventListener('click', exportCSV);
   document.getElementById('r-history-more').addEventListener('click', () => {
-    historyLimit += 20;
+    state.historyLimit += 20;
     render();
   });
   document.getElementById('r-alert-clear').addEventListener('click', clearAlertLogs);
@@ -528,11 +541,11 @@ function ensureDOM() {
 
 // ===== 추세 화살표 =====
 function getTrendArrow(current, previous) {
-  if (previous === null) return { symbol: '', cls: '' };
+  if (previous === null) return { symbol: '', cls: '', label: '' };
   const diff = current - previous;
-  if (diff > 0.1) return { symbol: '\u2191', cls: 'trend-up' };
-  if (diff < -0.1) return { symbol: '\u2193', cls: 'trend-down' };
-  return { symbol: '\u2192', cls: 'trend-stable' };
+  if (diff > 0.1) return { symbol: '\u2191', cls: 'trend-up', label: t('app.trend.up') || '상승' };
+  if (diff < -0.1) return { symbol: '\u2193', cls: 'trend-down', label: t('app.trend.down') || '하강' };
+  return { symbol: '\u2192', cls: 'trend-stable', label: t('app.trend.stable') || '안정' };
 }
 
 // ===== 디바이스 도트 클래스 =====
@@ -567,7 +580,7 @@ function updatePeriodIndicator() {
 
 function render() {
   const settings = loadSettings();
-  const filtered = getFilteredData(currentPeriod);
+  const filtered = getFilteredData(state.currentPeriod);
   if (filtered.length === 0) {
     domInitialized = false;
     document.getElementById('app').innerHTML = `
@@ -608,19 +621,19 @@ function render() {
     (latest.temperature > latestThresholds.alertHigh || latest.temperature < latestThresholds.alertLow);
   const isAlert = latest.alert || isThresholdAlert;
 
-  if (previousTemp !== null && previousTemp !== latest.temperature) {
+  if (state.previousTemp !== null && state.previousTemp !== latest.temperature) {
     checkAndAlert(latest.temperature, latest.device_id);
   }
-  const tempChanged = previousTemp !== null && previousTemp !== latest.temperature;
-  const trend = getTrendArrow(latest.temperature, previousTemp);
-  previousTemp = latest.temperature;
+  const tempChanged = state.previousTemp !== null && state.previousTemp !== latest.temperature;
+  const trend = getTrendArrow(latest.temperature, state.previousTemp);
+  state.previousTemp = latest.temperature;
 
   const locale = getLocale();
   const timeStr = latest.time.toLocaleString(locale, {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
   const agoStr = getRelativeTime(latest.time);
-  const isStale = (Date.now() - latest.time.getTime()) > 10 * 60 * 1000;
+  const isStale = (Date.now() - latest.time.getTime()) > STALE_THRESHOLD_MS;
   const deviceLabel = device === 'all' ? '' : ` (${esc(device)})`;
 
   // 동적 온도 색상
@@ -684,8 +697,12 @@ function render() {
   if (trend.symbol) {
     trendEl.textContent = trend.symbol;
     trendEl.className = `temp-trend ${trend.cls}`;
+    trendEl.setAttribute('aria-label', trend.label);
+    trendEl.setAttribute('role', 'img');
   } else {
     trendEl.textContent = '';
+    trendEl.removeAttribute('aria-label');
+    trendEl.removeAttribute('role');
   }
 
   // 반원형 게이지
@@ -751,7 +768,7 @@ function render() {
     { hours: 168, label: '7D' }
   ];
   document.getElementById('r-chart-period').innerHTML = periods.map(p =>
-    `<button class="period-btn ${currentPeriod === p.hours ? 'active' : ''}" data-period="${p.hours}">${p.label}</button>`
+    `<button class="period-btn ${state.currentPeriod === p.hours ? 'active' : ''}" data-period="${p.hours}">${p.label}</button>`
   ).join('');
 
   // 기간 pill 인디케이터
@@ -772,8 +789,8 @@ function render() {
 
   // 이력 목록 (날짜 구분선 + 디바이스 도트 + 알림 항목 배경)
   const historyList = document.getElementById('r-history-list');
-  const historySlice = filtered.slice(0, historyLimit);
-  const showDateSeparator = currentPeriod >= 72;
+  const historySlice = filtered.slice(0, state.historyLimit);
+  const showDateSeparator = state.currentPeriod >= 72;
   let lastDateStr = '';
   let historyHTML = '';
   let itemIndex = 0;
@@ -805,9 +822,9 @@ function render() {
   historyList.innerHTML = historyHTML;
 
   const moreBtn = document.getElementById('r-history-more');
-  if (filtered.length > historyLimit) {
+  if (filtered.length > state.historyLimit) {
     moreBtn.style.display = '';
-    moreBtn.textContent = t('app.history.more', { n: filtered.length - historyLimit });
+    moreBtn.textContent = t('app.history.more', { n: filtered.length - state.historyLimit });
   } else {
     moreBtn.style.display = 'none';
   }
@@ -831,12 +848,12 @@ function render() {
   }
 
   updateConnectionUI();
-  drawChart(filtered, currentPeriod);
+  drawChart(filtered, state.currentPeriod);
 }
 
 // ===== CSV 내보내기 =====
 function exportCSV() {
-  const filtered = getFilteredData(currentPeriod);
+  const filtered = getFilteredData(state.currentPeriod);
   if (filtered.length === 0) return;
   const header = t('csv.header');
   const rows = filtered.map(d =>
