@@ -1,0 +1,623 @@
+/* ===== CSS 변수 기반 테마 시스템 ===== */
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: #1e293b;
+  --bg-header-start: #1e3a5f;
+  --bg-header-end: #1e293b;
+  --bg-temp-start: #1e3a5f;
+  --bg-temp-end: #0c4a6e;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #334155;
+  --btn-bg: #334155;
+  --btn-active-bg: #3b82f6;
+  --btn-active-text: #fff;
+  --chart-bg: #0f172a;
+  --shadow-color: rgba(0,0,0,0.3);
+  --overlay-bg: rgba(0,0,0,0.5);
+  --input-bg: #0f172a;
+  --input-border: #475569;
+  --code-bg: #0f172a;
+  --accent: #3b82f6;
+  --toast-success-bg: #065f46;
+  --toast-success-text: #6ee7b7;
+  --toast-warning-bg: #78350f;
+  --toast-warning-text: #fcd34d;
+  --toast-info-bg: #1e3a5f;
+  --toast-info-text: #93c5fd;
+  --skeleton-base: #1e293b;
+  --skeleton-shine: #334155;
+  --connection-banner-bg: rgba(239,68,68,0.15);
+  --connection-banner-text: #f87171;
+  --alert-log-bg: rgba(239,68,68,0.05);
+  --alert-log-border: #ef4444;
+  --history-alert-bg: rgba(239,68,68,0.08);
+  --gauge-track: rgba(255,255,255,0.15);
+  --gauge-fill: #4ade80;
+  --gauge-warn: #f87171;
+  --empty-state-color: #475569;
+  --glass-bg: rgba(30,41,59,0.65);
+  --glass-border: rgba(255,255,255,0.08);
+  --stat-min-bg: rgba(56,189,248,0.08);
+  --stat-avg-bg: rgba(167,139,250,0.08);
+  --stat-max-bg: rgba(251,146,60,0.08);
+}
+
+[data-theme="light"] {
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-header-start: #3b82f6;
+  --bg-header-end: #2563eb;
+  --bg-temp-start: #3b82f6;
+  --bg-temp-end: #1d4ed8;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --btn-bg: #e2e8f0;
+  --btn-active-bg: #3b82f6;
+  --btn-active-text: #fff;
+  --chart-bg: #ffffff;
+  --shadow-color: rgba(0,0,0,0.08);
+  --overlay-bg: rgba(0,0,0,0.3);
+  --input-bg: #f1f5f9;
+  --input-border: #cbd5e1;
+  --code-bg: #f1f5f9;
+  --accent: #3b82f6;
+  --toast-success-bg: #d1fae5;
+  --toast-success-text: #065f46;
+  --toast-warning-bg: #fef3c7;
+  --toast-warning-text: #78350f;
+  --toast-info-bg: #dbeafe;
+  --toast-info-text: #1e3a5f;
+  --skeleton-base: #e2e8f0;
+  --skeleton-shine: #f1f5f9;
+  --connection-banner-bg: rgba(239,68,68,0.1);
+  --connection-banner-text: #dc2626;
+  --alert-log-bg: rgba(239,68,68,0.04);
+  --alert-log-border: #ef4444;
+  --history-alert-bg: rgba(239,68,68,0.06);
+  --gauge-track: rgba(0,0,0,0.1);
+  --gauge-fill: #22c55e;
+  --gauge-warn: #ef4444;
+  --empty-state-color: #94a3b8;
+  --glass-bg: rgba(255,255,255,0.65);
+  --glass-border: rgba(0,0,0,0.06);
+  --stat-min-bg: rgba(56,189,248,0.06);
+  --stat-avg-bg: rgba(167,139,250,0.06);
+  --stat-max-bg: rgba(251,146,60,0.06);
+}
+
+/* ===== 공통 리셋 & 기본 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ===== 공통 헤더 ===== */
+.header {
+  background: linear-gradient(135deg, var(--bg-header-start), var(--bg-header-end));
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.3s;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-logo { flex-shrink: 0; }
+.header h1 { font-size: 18px; font-weight: 600; color: #fff; }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.icon-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background 0.2s;
+  text-decoration: none;
+}
+.icon-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ===== 공통 로딩 ===== */
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.retry-btn {
+  margin-top: 16px;
+  padding: 10px 24px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.retry-btn:hover { background: #2563eb; }
+
+/* ===== 공통 애니메이션 ===== */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes tempChange {
+  0% { transform: scale(1.1); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== 하단 탭 바 ===== */
+.bottom-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: stretch;
+  z-index: 50;
+  transition: background 0.3s, border-color 0.3s;
+}
+.bottom-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.bottom-tab svg {
+  width: 22px;
+  height: 22px;
+}
+.bottom-tab.active {
+  color: #3b82f6;
+}
+.bottom-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: #3b82f6;
+  border-radius: 0 0 3px 3px;
+  transform: translateX(-50%);
+  transition: width 0.3s ease;
+}
+.bottom-tab.active::before {
+  width: 32px;
+}
+.bottom-tab {
+  position: relative;
+}
+.bottom-tab:not(.active):hover {
+  color: var(--text-secondary);
+}
+
+/* ===== 설정 패널 (공용) ===== */
+.settings-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--overlay-bg);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.settings-overlay.open { opacity: 1; pointer-events: all; }
+.settings-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(320px, 85vw);
+  background: var(--bg-secondary);
+  z-index: 101;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+}
+.settings-panel.open { transform: translateX(0); }
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+.settings-header h2 { font-size: 16px; font-weight: 600; }
+.settings-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+}
+.settings-body { flex: 1; overflow-y: auto; padding: 20px; }
+.setting-group { margin-bottom: 24px; }
+.setting-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+.setting-label { font-size: 14px; color: var(--text-primary); }
+.setting-input {
+  width: 80px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.setting-input:focus { outline: none; border-color: #3b82f6; }
+
+/* 토글 스위치 */
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: var(--btn-bg);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: none;
+  flex-shrink: 0;
+}
+.toggle-switch.on { background: #3b82f6; }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+.toggle-switch.on::after { transform: translateX(22px); }
+
+/* 언어 전환 국기 토글 */
+.lang-row {
+  justify-content: center;
+  gap: 16px;
+}
+.lang-flag {
+  font-size: 28px;
+  line-height: 1;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.lang-flag.dim {
+  opacity: 0.3;
+  transform: scale(0.85);
+}
+
+/* 디바이스별 임계값 섹션 */
+.device-threshold-section {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.device-threshold-section:last-child {
+  border-bottom: none;
+}
+.setting-device-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+/* ===== 채팅 FAB ===== */
+.chat-fab {
+  position: fixed;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  z-index: 60;
+  transition: transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+}
+.chat-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
+.chat-fab:active { transform: scale(0.95); }
+.chat-fab.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.5);
+}
+
+/* ===== 채팅 패널 (플로팅 창) ===== */
+.chat-panel {
+  position: fixed;
+  bottom: calc(130px + env(safe-area-inset-bottom, 0px));
+  right: 16px;
+  width: 320px;
+  height: 400px;
+  background: var(--bg-secondary);
+  z-index: 101;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9) translateY(10px);
+  transform-origin: bottom right;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.chat-panel.open {
+  opacity: 1;
+  pointer-events: all;
+  transform: scale(1) translateY(0);
+}
+@media (max-width: 400px) {
+  .chat-panel {
+    right: 8px;
+    left: 8px;
+    width: auto;
+    bottom: calc(130px + env(safe-area-inset-bottom, 0px));
+    height: 380px;
+  }
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.chat-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.chat-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+}
+
+/* ===== 채팅 메시지 영역 ===== */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 32px 0;
+}
+
+/* ===== 메시지 버블 ===== */
+.chat-bubble {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  word-break: break-word;
+}
+.chat-bubble-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.chat-bubble-text {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.chat-bubble-other {
+  align-self: flex-start;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+.chat-bubble-own {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+}
+.chat-bubble-own .chat-bubble-meta {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== 채팅 입력 영역 ===== */
+.chat-input-area {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 18px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-send {
+  padding: 8px 14px;
+  border-radius: 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.chat-send:hover { background: #2563eb; }
+.chat-send-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== FAB 배지 ===== */
+.chat-fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* ===== 날짜 구분선 ===== */
+.chat-date-separator {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 8px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-date-separator::before,
+.chat-date-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+/* ===== 전송 실패 메시지 ===== */
+.chat-send-error {
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  font-size: 12px;
+  text-align: center;
+  flex-shrink: 0;
+  transition: opacity 0.3s;
+}
+.chat-send-error-hide {
+  opacity: 0;
+}
+
+/* ===== 채팅 헤더 좌측 (제목 + 접속자) ===== */
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-online-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ===== 타이핑 인디케이터 ===== */
+.chat-typing-indicator {
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  flex-shrink: 0;
+}

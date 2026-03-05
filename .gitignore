@@ -1,0 +1,22 @@
+# 의존성
+node_modules/
+
+# 비밀 설정 파일
+FridgeMonitor/secrets.h
+web-app/public/js/firebase-config.js
+test-firebase/firebase-config.js
+
+# Firebase 캐시
+web-app/.firebase/
+web-app/firebase-debug*.log
+
+# 테스트 폴더 (Firebase 테스트용, 프로젝트에 불필요)
+test-firebase/
+
+# 작업일지 (개인 메모)
+프로젝트_작업일지.*
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+*.swp

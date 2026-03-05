@@ -1,0 +1,94 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // temperatures 컬렉션
+    match /temperatures/{docId} {
+      // 읽기: 인증된 사용자만 (익명 인증 포함)
+      allow read: if request.auth != null;
+
+      // 생성: 인증 + 필드 검증 (정확히 4개 필드)
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['temperature', 'recorded_at', 'device_id', 'alert'])
+        && request.resource.data.keys().size() == 4
+        && request.resource.data.temperature is number
+        && request.resource.data.recorded_at is timestamp
+        && request.resource.data.device_id is string
+        && request.resource.data.alert is bool;
+
+      // 삭제: 인증 + 30일 이상 오래된 데이터만
+      allow delete: if request.auth != null
+        && resource.data.recorded_at < request.time - duration.value(30, 'd');
+
+      // 수정: 거부 (센서 데이터는 불변)
+      allow update: if false;
+    }
+
+    // metadata 컬렉션: 클린업 협조용
+    match /metadata/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && (docId == 'cleanup_last' || docId == 'chat_cleanup_last')
+        && request.resource.data.keys().hasAll(['timestamp'])
+        && request.resource.data.timestamp is timestamp;
+    }
+
+    // messages 컬렉션: 익명 채팅
+    match /messages/{msgId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['text', 'uid', 'nickname', 'created_at'])
+        && request.resource.data.keys().size() == 4
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() >= 1
+        && request.resource.data.nickname.size() <= 20
+        && request.resource.data.created_at == request.time;
+
+      allow update: if false;
+
+      allow delete: if request.auth != null
+        && resource.data.created_at < request.time - duration.value(30, 'd');
+    }
+
+    // presence 컬렉션: 온라인 상태
+    match /presence/{presenceId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if request.auth != null
+        && presenceId == request.auth.uid
+        && request.resource.data.keys().hasAll(['last_seen', 'uid'])
+        && request.resource.data.keys().size() == 2
+        && request.resource.data.last_seen == request.time
+        && request.resource.data.uid == request.auth.uid;
+
+      allow delete: if request.auth != null
+        && presenceId == request.auth.uid;
+    }
+
+    // typing 컬렉션: 타이핑 인디케이터
+    match /typing/{typingId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if request.auth != null
+        && typingId == request.auth.uid
+        && request.resource.data.keys().hasAll(['last_typed', 'uid'])
+        && request.resource.data.keys().size() == 2
+        && request.resource.data.last_typed == request.time
+        && request.resource.data.uid == request.auth.uid;
+
+      allow delete: if request.auth != null
+        && typingId == request.auth.uid;
+    }
+
+    // 기타 모든 컬렉션: 거부
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

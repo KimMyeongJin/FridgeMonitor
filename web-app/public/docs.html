@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#3b82f6" id="metaThemeColor">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/docs.css">
+  <title data-i18n="docs.title">문서 - 냉장고 온도 모니터</title>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <h1 data-i18n="docs.header">프로젝트 문서</h1>
+    </div>
+  </div>
+
+  <button class="menu-toggle" id="menuToggle" data-i18n="docs.menuToggle">☰ 목차 보기</button>
+
+  <div class="layout">
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-group-title" data-i18n="docs.nav.docs">문서</div>
+      <a href="#overview" class="nav-link active" data-i18n="docs.nav.overview">프로젝트 개요</a>
+      <a href="#hardware" class="nav-link" data-i18n="docs.nav.hardware">하드웨어 가이드</a>
+      <a href="#firmware" class="nav-link" data-i18n="docs.nav.firmware">펌웨어 가이드</a>
+      <a href="#firebase" class="nav-link" data-i18n="docs.nav.firebase">Firebase 설정</a>
+      <a href="#webapp" class="nav-link" data-i18n="docs.nav.webapp">웹앱 가이드</a>
+      <a href="#changelog" class="nav-link" data-i18n="docs.nav.changelog">업데이트 내역</a>
+      <a href="#troubleshooting" class="nav-link" data-i18n="docs.nav.troubleshoot">트러블슈팅</a>
+      <div class="nav-group-title" data-i18n="docs.nav.reference">참고</div>
+      <a href="#references" class="nav-link" data-i18n="docs.nav.references">참고 자료</a>
+    </nav>
+
+    <main class="content">
+
+      <!-- 1. 프로젝트 개요 -->
+      <section class="doc-section" id="overview">
+        <h2 data-i18n="docs.overview.title">프로젝트 개요</h2>
+        <p data-i18n="docs.overview.desc">냉장고의 실시간 온도를 측정하여 클라우드 DB에 저장하고, 웹앱(PWA)으로 어디서든 모니터링할 수 있는 IoT 시스템입니다.</p>
+
+        <h3 data-i18n="docs.overview.architecture">시스템 아키텍처</h3>
+        <div class="arch-diagram" data-i18n="docs.overview.archDiagram">
+          [PT100 센서] → [MAX31865] →(SPI)→ [ESP32] →(Wi-Fi)→ [Firebase] → [웹앱/모바일]
+        </div>
+
+        <div class="card">
+          <table>
+            <tr><th data-i18n="docs.overview.thComponent">구성 요소</th><th data-i18n="docs.overview.thRole">역할</th></tr>
+            <tr><td>PT100</td><td data-i18n="docs.overview.pt100Role">온도 센서 (냉장고 내부 설치)</td></tr>
+            <tr><td>MAX31865</td><td data-i18n="docs.overview.max31865Role">RTD-to-Digital 변환 모듈 (SPI 통신)</td></tr>
+            <tr><td>ESP32</td><td data-i18n="docs.overview.esp32Role">Wi-Fi 내장 마이크로컨트롤러</td></tr>
+            <tr><td>Firebase Firestore</td><td data-i18n="docs.overview.firestoreRole">클라우드 NoSQL DB</td></tr>
+            <tr><td data-i18n="docs.overview.pwaLabel">웹앱 PWA</td><td data-i18n="docs.overview.pwaRole">모바일 브라우저에서 앱처럼 사용</td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.overview.progress">진행 현황</h3>
+        <div class="card">
+          <table>
+            <tr><th data-i18n="docs.overview.thStep">단계</th><th data-i18n="docs.overview.thStatus">상태</th></tr>
+            <tr><td data-i18n="docs.overview.step1">1. 하드웨어 조립</td><td><span class="badge badge-pending" data-i18n="docs.overview.step1Status">진행 예정</span></td></tr>
+            <tr><td data-i18n="docs.overview.step2">2. ESP32 펌웨어</td><td><span class="badge badge-done" data-i18n="docs.overview.step2Status">완료</span></td></tr>
+            <tr><td data-i18n="docs.overview.step3">3. Firebase DB</td><td><span class="badge badge-done" data-i18n="docs.overview.step3Status">완료</span></td></tr>
+            <tr><td data-i18n="docs.overview.step4">4. 웹앱 (PWA)</td><td><span class="badge badge-done" data-i18n="docs.overview.step4Status">완료</span></td></tr>
+          </table>
+        </div>
+
+        <p><span data-i18n="docs.overview.deployUrl">배포 URL: </span><a href="https://fridge-monitor-9a844.web.app" style="color:var(--accent)">https://fridge-monitor-9a844.web.app</a></p>
+      </section>
+
+      <!-- 2. 하드웨어 가이드 -->
+      <section class="doc-section" id="hardware">
+        <h2 data-i18n="docs.hardware.title">하드웨어 가이드</h2>
+
+        <h3 data-i18n="docs.hardware.partsList">부품 목록</h3>
+        <div class="card">
+          <table>
+            <tr><th data-i18n="docs.hardware.thPart">부품</th><th data-i18n="docs.hardware.thBrand">권장 브랜드</th><th data-i18n="docs.hardware.thRole">역할</th></tr>
+            <tr><td>ESP32</td><td data-i18n="docs.hardware.esp32Brand">Espressif 정품</td><td data-i18n="docs.hardware.esp32Role">메인 컨트롤러 + Wi-Fi</td></tr>
+            <tr><td>PT100</td><td data-i18n="docs.hardware.pt100Brand">Omega, Heraeus</td><td data-i18n="docs.hardware.pt100Role">온도 센서</td></tr>
+            <tr><td>MAX31865</td><td data-i18n="docs.hardware.max31865Brand">Adafruit</td><td data-i18n="docs.hardware.max31865Role">RTD 변환 모듈</td></tr>
+            <tr><td data-i18n="docs.hardware.breadboard">브레드보드</td><td data-i18n="docs.hardware.breadboardBrand">-</td><td data-i18n="docs.hardware.breadboardRole">회로 조립용</td></tr>
+            <tr><td data-i18n="docs.hardware.jumperWire">점퍼선</td><td data-i18n="docs.hardware.jumperBrand">-</td><td data-i18n="docs.hardware.jumperRole">배선용</td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.hardware.spiWiring">SPI 배선도</h3>
+        <div class="card">
+          <table>
+            <tr><th data-i18n="docs.hardware.thMax31865Pin">MAX31865 핀</th><th data-i18n="docs.hardware.thEsp32Pin">ESP32 핀</th></tr>
+            <tr><td>VIN</td><td>3V3</td></tr>
+            <tr><td>GND</td><td>GND</td></tr>
+            <tr><td>CLK</td><td>GPIO18</td></tr>
+            <tr><td>SDO (MISO)</td><td>GPIO19</td></tr>
+            <tr><td>SDI (MOSI)</td><td>GPIO23</td></tr>
+            <tr><td>CS</td><td>GPIO5</td></tr>
+          </table>
+        </div>
+
+        <div class="warning" data-i18n="docs.hardware.warningVin">VIN은 반드시 3V3에 연결하세요. 5V에 연결하면 MAX31865가 손상됩니다!</div>
+
+        <h3 data-i18n="docs.hardware.assemblyOrder">조립 순서</h3>
+        <ol>
+          <li data-i18n-html="docs.hardware.assembly1"><strong>PT100 선 확인</strong> - 2선식(선 2개) 또는 3선식(선 3개) 구분</li>
+          <li><span data-i18n-html="docs.hardware.assembly2"><strong>MAX31865 점퍼 설정</strong> - 보드 뒷면 납땜 점퍼를 PT100 타입에 맞게 설정</span>
+            <ul>
+              <li data-i18n="docs.hardware.assembly2a">2선식: "2/4" 점퍼 + "2-3" 점퍼 둘 다 납땜</li>
+              <li data-i18n="docs.hardware.assembly2b">3선식: "2-3" 점퍼만 끊기</li>
+            </ul>
+          </li>
+          <li data-i18n-html="docs.hardware.assembly3"><strong>PT100 → MAX31865</strong> - 스크류 터미널에 PT100 선 삽입 후 나사 조임</li>
+          <li data-i18n-html="docs.hardware.assembly4"><strong>ESP32 ↔ MAX31865 SPI 배선</strong> - 위 배선표 참고</li>
+          <li data-i18n-html="docs.hardware.assembly5"><strong>브레드보드 배치</strong> - 부품 배치 후 점퍼선 연결</li>
+          <li data-i18n-html="docs.hardware.assembly6"><strong>연결 확인</strong> - 합선 없는지 체크</li>
+          <li data-i18n-html="docs.hardware.assembly7"><strong>USB 연결 테스트</strong> - LED 점등 확인</li>
+        </ol>
+
+        <h3 data-i18n="docs.hardware.noSolder">납땜 없이 진행하기</h3>
+        <div class="info" data-i18n="docs.hardware.noSolderInfo">
+          헤더핀 미납땜 시 악어클립/듀폰 커넥터로 임시 연결 가능 (불안정).
+          권장: 저렴한 인두기 세트 구매 (1~2만원) 또는 메이커 스페이스 방문.
+        </div>
+
+        <h3 data-i18n="docs.hardware.installTips">냉장고 설치 팁</h3>
+        <ul>
+          <li data-i18n="docs.hardware.installTip1">PT100만 냉장고 내부에 넣기</li>
+          <li data-i18n="docs.hardware.installTip2">리드선은 문 패킹 아래쪽 틈새로 통과</li>
+          <li data-i18n="docs.hardware.installTip3">ESP32 + MAX31865는 냉장고 외부에 배치</li>
+        </ul>
+
+        <div class="warning" data-i18n="docs.hardware.commonMistakes">
+          흔한 실수: VIN을 5V에 연결 (보드 손상), SDO↔SDI 핀 순서 뒤바뀜, PT100 나사 헐거움 (온도값 불안정)
+        </div>
+      </section>
+
+      <!-- 3. 펌웨어 가이드 -->
+      <section class="doc-section" id="firmware">
+        <h2 data-i18n="docs.firmware.title">펌웨어 가이드</h2>
+
+        <h3 data-i18n="docs.firmware.devEnv">개발 환경</h3>
+        <ul>
+          <li data-i18n-html="docs.firmware.devIde"><strong>IDE:</strong> Arduino IDE</li>
+          <li data-i18n-html="docs.firmware.devBoard"><strong>보드:</strong> ESP32 (보드 매니저에서 추가)</li>
+          <li data-i18n-html="docs.firmware.devBoardUrl"><strong>보드 매니저 URL:</strong></li>
+        </ul>
+        <pre>https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json</pre>
+
+        <h3 data-i18n="docs.firmware.libraries">필요 라이브러리</h3>
+        <div class="card">
+          <table>
+            <tr><th data-i18n="docs.firmware.thLibrary">라이브러리</th><th data-i18n="docs.firmware.thPurpose">용도</th></tr>
+            <tr><td>Adafruit MAX31865</td><td data-i18n="docs.firmware.maxLibPurpose">온도 센서 통신</td></tr>
+            <tr><td>Firebase ESP Client (by mobizt)</td><td data-i18n="docs.firmware.firebaseLibPurpose">Firebase Firestore 연동</td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.firmware.fileTitle">펌웨어 파일</h3>
+        <p data-i18n-html="docs.firmware.filePath">경로: <code>FridgeMonitor/FridgeMonitor.ino</code></p>
+        <ul>
+          <li data-i18n="docs.firmware.feature1">Wi-Fi 자동 재연결</li>
+          <li data-i18n="docs.firmware.feature2">30~60초 간격 온도 측정</li>
+          <li data-i18n="docs.firmware.feature3">Firebase Firestore에 데이터 전송</li>
+          <li data-i18n="docs.firmware.feature4">오프라인 버퍼 (Wi-Fi 끊김 시 데이터 보관)</li>
+          <li data-i18n="docs.firmware.feature5">온도 이상 시 alert 플래그 전송</li>
+        </ul>
+
+        <h3 data-i18n="docs.firmware.compileCheck">컴파일 확인</h3>
+        <div class="info" data-i18n="docs.firmware.compileInfo">
+          빨간 글씨 "#pragma message: BT: forcing BR/EDR max sync conn eff to 1"은 정보성 메시지로, 에러가 아닙니다. 블루투스 관련 경고이며 프로젝트와 무관합니다.
+        </div>
+        <p data-i18n="docs.firmware.compileResult">정상 컴파일 결과: 프로그램 저장 공간 81%, 동적 메모리 15% 사용</p>
+      </section>
+
+      <!-- 4. Firebase 설정 -->
+      <section class="doc-section" id="firebase">
+        <h2 data-i18n="docs.firebase.title">Firebase 설정</h2>
+
+        <h3 data-i18n="docs.firebase.why">왜 Firebase인가?</h3>
+        <ul>
+          <li data-i18n="docs.firebase.why1">Gmail 계정만 있으면 즉시 사용 (AWS 가입 불필요)</li>
+          <li data-i18n="docs.firebase.why2">별도 서버 구축 불필요 (BaaS)</li>
+          <li data-i18n="docs.firebase.why3">실시간 데이터 동기화 내장</li>
+          <li data-i18n="docs.firebase.why4">무료 티어로 충분 (개인 프로젝트)</li>
+        </ul>
+
+        <h3 data-i18n="docs.firebase.setup">초기 설정</h3>
+        <ol>
+          <li data-i18n="docs.firebase.setup1">Firebase 콘솔에서 프로젝트 생성</li>
+          <li data-i18n-html="docs.firebase.setup2"><strong>Authentication</strong> → 익명 인증 활성화</li>
+          <li data-i18n-html="docs.firebase.setup3"><strong>Firestore Database</strong> → 서울 리전, 테스트 모드로 생성</li>
+          <li data-i18n-html="docs.firebase.setup4"><strong>Hosting</strong> → 웹앱 배포용</li>
+        </ol>
+
+        <h3 data-i18n="docs.firebase.dataStructure">Firestore 데이터 구조</h3>
+        <pre data-i18n-html="docs.firebase.dataStructurePre">temperatures (컬렉션)
+  └─ {docId} (문서)
+      ├─ temperature: 4.5        (숫자)
+      ├─ recorded_at: Timestamp  (시간)
+      ├─ device_id: "fridge_01"  (문자열)
+      └─ alert: false            (불리언)
+
+metadata (컬렉션)
+  └─ cleanup_last (문서)
+      └─ timestamp: Timestamp    (시간)
+
+messages (컬렉션)
+  └─ {docId} (문서)
+      ├─ text: "메시지 내용"       (문자열, 1~500자)
+      ├─ uid: "abc123"            (익명 인증 UID)
+      ├─ nickname: "관리자1"       (문자열, 1~20자)
+      └─ created_at: Timestamp    (시간)
+
+presence (컬렉션)
+  └─ {uid} (문서)
+      ├─ last_seen: Timestamp     (시간, 60초 하트비트)
+      └─ uid: "abc123"            (익명 인증 UID)
+
+typing (컬렉션)
+  └─ {uid} (문서)
+      ├─ last_typed: Timestamp    (시간, 3초 디바운스)
+      └─ uid: "abc123"            (익명 인증 UID)</pre>
+
+        <h3 data-i18n="docs.firebase.pricing">요금</h3>
+        <div class="card">
+          <table>
+            <tr><th data-i18n="docs.firebase.thItem">항목</th><th data-i18n="docs.firebase.thFreePlan">Spark 무료 플랜</th><th data-i18n="docs.firebase.thOurUsage">우리 사용량</th></tr>
+            <tr><td data-i18n="docs.firebase.readLabel">Firestore 읽기</td><td data-i18n="docs.firebase.readFree">5만/일</td><td data-i18n="docs.firebase.readOurs">~수백/일</td></tr>
+            <tr><td data-i18n="docs.firebase.writeLabel">Firestore 쓰기</td><td data-i18n="docs.firebase.writeFree">2만/일</td><td data-i18n="docs.firebase.writeOurs">~1,440/일 (1분 간격)</td></tr>
+            <tr><td data-i18n="docs.firebase.storageLabel">Hosting 저장</td><td data-i18n="docs.firebase.storageFree">10 GB</td><td data-i18n="docs.firebase.storageOurs">~1 MB</td></tr>
+            <tr><td data-i18n="docs.firebase.transferLabel">Hosting 전송</td><td data-i18n="docs.firebase.transferFree">360 MB/일</td><td data-i18n="docs.firebase.transferOurs">~수 MB/일</td></tr>
+          </table>
+        </div>
+        <div class="info" data-i18n="docs.firebase.pricingInfo">개인 프로젝트에서는 유료 전환될 일이 거의 없습니다.</div>
+      </section>
+
+      <!-- 5. 웹앱 가이드 -->
+      <section class="doc-section" id="webapp">
+        <h2 data-i18n="docs.webapp.title">웹앱 가이드</h2>
+
+        <h3 data-i18n="docs.webapp.features">기능 목록</h3>
+        <ul>
+          <li data-i18n="docs.webapp.feature1">현재 온도 실시간 표시 (Firebase 리스너)</li>
+          <li data-i18n="docs.webapp.feature2">온도 변화 차트 (6H / 24H / 3D / 7D)</li>
+          <li data-i18n="docs.webapp.feature3">최저 / 평균 / 최고 통계</li>
+          <li data-i18n="docs.webapp.feature4">다중 디바이스 지원 (탭 전환)</li>
+          <li data-i18n="docs.webapp.feature5">온도 알림 설정 (상한/하한, 브라우저 알림)</li>
+          <li data-i18n="docs.webapp.feature6">차트 임계값 라인 표시</li>
+          <li data-i18n="docs.webapp.feature7">라이트/다크 모드 전환</li>
+          <li data-i18n="docs.webapp.feature8">CSV 데이터 내보내기</li>
+          <li data-i18n="docs.webapp.feature9">PWA (홈 화면에 앱처럼 추가 가능)</li>
+          <li data-i18n="docs.webapp.feature10">오프라인 캐싱 (Service Worker)</li>
+          <li data-i18n="docs.webapp.feature11">한국어/영어 다국어 지원 (i18n)</li>
+          <li data-i18n="docs.webapp.feature12">디바이스별 알림 임계값 설정</li>
+          <li data-i18n="docs.webapp.feature13">알림 소리 (Web Audio API)</li>
+          <li data-i18n="docs.webapp.feature14">화씨(°F) 단위 지원</li>
+          <li data-i18n="docs.webapp.feature15">알림 이력 로그</li>
+          <li data-i18n="docs.webapp.feature16">인증 실패 시 자동 재시도</li>
+          <li data-i18n="docs.webapp.feature17">기록 목록 페이지네이션</li>
+          <li data-i18n="docs.webapp.feature20">접근성(ARIA) 개선</li>
+          <li data-i18n="docs.webapp.feature21">30일 이상 오래된 데이터 자동 정리</li>
+          <li data-i18n="docs.webapp.feature22">익명 채팅 (Firestore 실시간, 플로팅 버튼 UI)</li>
+          <li data-i18n="docs.webapp.feature23">채팅 읽지 않은 메시지 배지 (FAB 버튼)</li>
+          <li data-i18n="docs.webapp.feature24">채팅 중복 전송 방지</li>
+          <li data-i18n="docs.webapp.feature25">채팅 스마트 자동 스크롤</li>
+          <li data-i18n="docs.webapp.feature26">채팅 날짜 구분선</li>
+          <li data-i18n="docs.webapp.feature27">ESC 키로 채팅 닫기</li>
+          <li data-i18n="docs.webapp.feature28">채팅 전송 실패 피드백</li>
+          <li data-i18n="docs.webapp.feature29">채팅 접속자 수 실시간 표시 (Firestore Presence)</li>
+          <li data-i18n="docs.webapp.feature30">채팅 타이핑 인디케이터</li>
+        </ul>
+
+        <h3 data-i18n="docs.webapp.techStack">기술 스택</h3>
+        <div class="card">
+          <table>
+            <tr><th data-i18n="docs.webapp.thItem">항목</th><th data-i18n="docs.webapp.thTech">기술</th></tr>
+            <tr><td data-i18n="docs.webapp.techFrontend">프론트엔드</td><td data-i18n="docs.webapp.techFrontendVal">순수 HTML / CSS / JavaScript (프레임워크 없음)</td></tr>
+            <tr><td data-i18n="docs.webapp.techDb">DB 연동</td><td data-i18n="docs.webapp.techDbVal">Firebase Firestore (실시간 리스너)</td></tr>
+            <tr><td data-i18n="docs.webapp.techAuth">인증</td><td data-i18n="docs.webapp.techAuthVal">Firebase Anonymous Auth</td></tr>
+            <tr><td data-i18n="docs.webapp.techHosting">호스팅</td><td data-i18n="docs.webapp.techHostingVal">Firebase Hosting</td></tr>
+            <tr><td data-i18n="docs.webapp.techChart">차트</td><td data-i18n="docs.webapp.techChartVal">Canvas API (순수 구현)</td></tr>
+            <tr><td data-i18n="docs.webapp.techSettings">설정 저장</td><td data-i18n="docs.webapp.techSettingsVal">localStorage</td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.webapp.localTest">로컬 테스트</h3>
+        <pre>cd web-app
+firebase serve --only hosting
+# → http://localhost:5000</pre>
+
+        <h3 data-i18n="docs.webapp.deploy">배포</h3>
+        <pre>cd web-app
+firebase deploy
+# → Hosting + Firestore 규칙 함께 배포</pre>
+
+        <h3 data-i18n="docs.webapp.fakeData">가짜 데이터로 테스트</h3>
+        <pre data-i18n-html="docs.webapp.fakeDataPre">cd test-firebase
+npm run send       # 24시간치 가짜 데이터 전송
+npm run simulate   # ESP32 흉내 실시간 전송
+npm run read       # 저장된 데이터 조회 + 통계</pre>
+      </section>
+
+      <!-- 6. 업데이트 내역 -->
+      <section class="doc-section" id="changelog">
+        <h2 data-i18n="docs.changelog.title">업데이트 내역</h2>
+        <p data-i18n="docs.changelog.desc">우선순위별로 정리한 프로젝트 개선사항입니다.</p>
+
+        <h3 data-i18n="docs.changelog.v2Title">v2.1 개선사항 (2026-03-05)</h3>
+        <div class="card">
+          <table>
+            <tr>
+              <th>#</th>
+              <th data-i18n="docs.changelog.thTitle">제목</th>
+              <th data-i18n="docs.changelog.thCategory">카테고리</th>
+              <th data-i18n="docs.changelog.thStatus">상태</th>
+            </tr>
+            <tr><td>30</td><td data-i18n="docs.changelog.v2_1">ESP32 타임스탬프 시간대 불일치 수정 (KST→UTC 통일)</td><td data-i18n="docs.changelog.catBugfix">버그 수정</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>31</td><td data-i18n="docs.changelog.v2_2">알림 이력 온도 단위 설정값 반영 (°C/°F)</td><td data-i18n="docs.changelog.catBugfix">버그 수정</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>32</td><td data-i18n="docs.changelog.v2_3">데이터 정리 시 100개 이상 일괄 반복 삭제</td><td data-i18n="docs.changelog.catBugfix">버그 수정</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>33</td><td data-i18n="docs.changelog.v2_4">디바이스 검색 중복 리스너 제거 (비용 절감)</td><td data-i18n="docs.changelog.catOptimize">최적화</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>34</td><td data-i18n="docs.changelog.v2_5">채팅 안 읽은 메시지 카운트 정확도 개선</td><td data-i18n="docs.changelog.catBugfix">버그 수정</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>35</td><td data-i18n="docs.changelog.v2_6">설정 패널 DOM 렌더링 성능 개선</td><td data-i18n="docs.changelog.catPerf">성능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>36</td><td data-i18n="docs.changelog.v2_7">3일/7일 차트 X축에 날짜 표시 추가</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>37</td><td data-i18n="docs.changelog.v2_8">오래된 접속 상태 문서 자동 정리</td><td data-i18n="docs.changelog.catOptimize">최적화</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>38</td><td data-i18n="docs.changelog.v2_9">PWA 설치 안내 배너 추가</td><td data-i18n="docs.changelog.catFeature">기능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.changelog.v22Title">v2.2 버그 수정 (2026-03-05)</h3>
+        <div class="card">
+          <table>
+            <tr>
+              <th>#</th>
+              <th data-i18n="docs.changelog.thTitle">제목</th>
+              <th data-i18n="docs.changelog.thCategory">카테고리</th>
+              <th data-i18n="docs.changelog.thStatus">상태</th>
+            </tr>
+            <tr><td>39</td><td data-i18n="docs.changelog.v22_1">차트 리사이즈 시 조회 기간 값이 초기화되는 버그 수정</td><td data-i18n="docs.changelog.catBugfix">버그 수정</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>40</td><td data-i18n="docs.changelog.v22_2">시스템 테마 자동 감지 로직 수정 (기존 사용자 호환)</td><td data-i18n="docs.changelog.catBugfix">버그 수정</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>41</td><td data-i18n="docs.changelog.v22_3">기록 목록 시간 표시 형식 수정 (날짜 제거)</td><td data-i18n="docs.changelog.catBugfix">버그 수정</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>42</td><td data-i18n="docs.changelog.v22_4">알림 소리 AudioContext 메모리 누수 수정</td><td data-i18n="docs.changelog.catBugfix">버그 수정</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>43</td><td data-i18n="docs.changelog.v22_5">통계 카드 아이콘 반복 렌더링 최적화</td><td data-i18n="docs.changelog.catOptimize">최적화</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.changelog.highTitle">HIGH 우선순위</h3>
+        <div class="card">
+          <table>
+            <tr>
+              <th>#</th>
+              <th data-i18n="docs.changelog.thTitle">제목</th>
+              <th data-i18n="docs.changelog.thCategory">카테고리</th>
+              <th data-i18n="docs.changelog.thStatus">상태</th>
+            </tr>
+            <tr><td>2</td><td data-i18n="docs.changelog.high2">Firestore 쿼리 기간별 동적 제한</td><td data-i18n="docs.changelog.catFeature">기능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>3</td><td data-i18n="docs.changelog.high3">오프라인 데이터 캐싱</td><td data-i18n="docs.changelog.catPwa">PWA</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>4</td><td data-i18n="docs.changelog.high4">접근성(ARIA) 개선</td><td data-i18n="docs.changelog.catA11y">접근성</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>5</td><td data-i18n="docs.changelog.high5">DOM 전체 재렌더링 → 부분 업데이트</td><td data-i18n="docs.changelog.catPerf">성능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.changelog.mediumTitle">MEDIUM 우선순위</h3>
+        <div class="card">
+          <table>
+            <tr>
+              <th>#</th>
+              <th data-i18n="docs.changelog.thTitle">제목</th>
+              <th data-i18n="docs.changelog.thCategory">카테고리</th>
+              <th data-i18n="docs.changelog.thStatus">상태</th>
+            </tr>
+            <tr><td>7</td><td data-i18n="docs.changelog.medium7">언어 전환 시 새로고침 제거</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>8</td><td data-i18n="docs.changelog.medium8">차트 리사이즈 대응</td><td data-i18n="docs.changelog.catUxPerf">UX/성능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>9</td><td data-i18n="docs.changelog.medium9">차트 DPI 처리 수정</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>10</td><td data-i18n="docs.changelog.medium10">인증 실패 시 재시도 UI</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>11</td><td data-i18n="docs.changelog.medium11">알림 히스토리 로그</td><td data-i18n="docs.changelog.catFeature">기능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>12</td><td data-i18n="docs.changelog.medium12">클린업 클라이언트 간 조율</td><td data-i18n="docs.changelog.catFeature">기능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>13</td><td data-i18n="docs.changelog.medium13">PWA 매니페스트 보완</td><td data-i18n="docs.changelog.catPwa">PWA</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>14</td><td data-i18n="docs.changelog.medium14">Service Worker 캐시 버전 자동화</td><td data-i18n="docs.changelog.catCodeQuality">코드 품질</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>15</td><td data-i18n="docs.changelog.medium15">inline onclick → 이벤트 위임</td><td data-i18n="docs.changelog.catCodeQuality">코드 품질</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.changelog.lowTitle">LOW 우선순위</h3>
+        <div class="card">
+          <table>
+            <tr>
+              <th>#</th>
+              <th data-i18n="docs.changelog.thTitle">제목</th>
+              <th data-i18n="docs.changelog.thCategory">카테고리</th>
+              <th data-i18n="docs.changelog.thStatus">상태</th>
+            </tr>
+            <tr><td>16</td><td data-i18n="docs.changelog.low16">히스토리 목록 페이지네이션</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>17</td><td data-i18n="docs.changelog.low17">화씨(°F) 단위 지원</td><td data-i18n="docs.changelog.catFeature">기능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>18</td><td data-i18n="docs.changelog.low18">Math.min/max 스프레드 안전성</td><td data-i18n="docs.changelog.catPerf">성능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>19</td><td data-i18n="docs.changelog.low19">SPA 리라이트 규칙 제거</td><td data-i18n="docs.changelog.catCodeQuality">코드 품질</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>20</td><td data-i18n="docs.changelog.low20">설정 패널/하단 네비 HTML 중복 제거</td><td data-i18n="docs.changelog.catCodeQuality">코드 품질</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+          </table>
+        </div>
+
+        <h3 data-i18n="docs.changelog.chatTitle">채팅 기능</h3>
+        <div class="card">
+          <table>
+            <tr>
+              <th>#</th>
+              <th data-i18n="docs.changelog.thTitle">제목</th>
+              <th data-i18n="docs.changelog.thCategory">카테고리</th>
+              <th data-i18n="docs.changelog.thStatus">상태</th>
+            </tr>
+            <tr><td>21</td><td data-i18n="docs.changelog.chat21">익명 채팅 기능 (Firestore 실시간, 플로팅 버튼 UI)</td><td data-i18n="docs.changelog.catFeature">기능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>22</td><td data-i18n="docs.changelog.chat22">읽지 않은 메시지 배지 (FAB 버튼에 빨간 배지)</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>23</td><td data-i18n="docs.changelog.chat23">중복 전송 방지 (전송 중 버튼 비활성화)</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>24</td><td data-i18n="docs.changelog.chat24">스마트 자동 스크롤 (이전 메시지 읽을 때 스크롤 유지)</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>25</td><td data-i18n="docs.changelog.chat25">날짜 구분선 (다른 날짜 메시지 사이 구분)</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>26</td><td data-i18n="docs.changelog.chat26">ESC 키로 채팅 닫기</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>27</td><td data-i18n="docs.changelog.chat27">전송 실패 시 에러 피드백 표시</td><td data-i18n="docs.changelog.catUx">UX</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>28</td><td data-i18n="docs.changelog.chat28">접속자 수 실시간 표시 (Firestore Presence)</td><td data-i18n="docs.changelog.catFeature">기능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+            <tr><td>29</td><td data-i18n="docs.changelog.chat29">타이핑 인디케이터 (입력 중 표시)</td><td data-i18n="docs.changelog.catFeature">기능</td><td><span class="badge badge-done" data-i18n="docs.changelog.done">완료</span></td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- 7. 트러블슈팅 -->
+      <section class="doc-section" id="troubleshooting">
+        <h2 data-i18n="docs.troubleshoot.title">트러블슈팅</h2>
+
+        <h3 data-i18n="docs.troubleshoot.noPort">ESP32 포트가 안 보여요</h3>
+        <div class="card">
+          <p data-i18n-html="docs.troubleshoot.noPortCause"><strong>원인:</strong> CP2102N USB to UART Bridge 드라이버 미설치</p>
+          <p data-i18n-html="docs.troubleshoot.noPortFix"><strong>해결:</strong></p>
+          <ol>
+            <li><span data-i18n="docs.troubleshoot.noPortStep1">Silicon Labs 공식 드라이버 다운로드:</span><br>
+              <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers" style="color:var(--accent)">https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers</a>
+            </li>
+            <li data-i18n="docs.troubleshoot.noPortStep2">"CP210x Universal Windows Driver" 선택</li>
+            <li data-i18n-html="docs.troubleshoot.noPortStep3"><code>CP210xVCPInstaller_x64.exe</code> 실행</li>
+            <li data-i18n="docs.troubleshoot.noPortStep4">ESP32 USB 케이블 뽑았다가 다시 연결</li>
+          </ol>
+        </div>
+
+        <h3 data-i18n="docs.troubleshoot.compileError">컴파일 시 빨간 에러 메시지</h3>
+        <div class="card">
+          <p data-i18n-html="docs.troubleshoot.compileMsg"><strong>메시지:</strong> <code>#pragma message: BT: forcing BR/EDR max sync conn eff to 1</code></p>
+          <p data-i18n-html="docs.troubleshoot.compileCause"><strong>원인:</strong> ESP32 블루투스 라이브러리의 정보성 메시지 (경고)</p>
+          <p data-i18n-html="docs.troubleshoot.compileFix"><strong>해결:</strong> 무시해도 됩니다. 컴파일 성공입니다.</p>
+        </div>
+
+        <h3 data-i18n="docs.troubleshoot.unstableTemp">온도값이 불안정해요</h3>
+        <div class="card">
+          <p data-i18n-html="docs.troubleshoot.unstableCheck"><strong>확인 사항:</strong></p>
+          <ul>
+            <li data-i18n="docs.troubleshoot.unstable1">PT100 스크류 터미널 나사가 충분히 조여졌는지 확인</li>
+            <li data-i18n="docs.troubleshoot.unstable2">2선/3선 점퍼 설정이 PT100 타입과 일치하는지 확인</li>
+            <li data-i18n="docs.troubleshoot.unstable3">SPI 배선 (특히 SDO↔SDI)이 바뀌지 않았는지 확인</li>
+          </ul>
+        </div>
+
+        <h3 data-i18n="docs.troubleshoot.noWebData">웹앱에 데이터가 안 나와요</h3>
+        <div class="card">
+          <p data-i18n-html="docs.troubleshoot.noWebDataCheck"><strong>확인 사항:</strong></p>
+          <ul>
+            <li data-i18n="docs.troubleshoot.noWebData1">Firebase 콘솔에서 Firestore에 데이터가 있는지 확인</li>
+            <li data-i18n="docs.troubleshoot.noWebData2">Authentication → 익명 인증이 활성화되어 있는지 확인</li>
+            <li data-i18n="docs.troubleshoot.noWebData3">브라우저 콘솔(F12)에서 에러 메시지 확인</li>
+            <li data-i18n-html="docs.troubleshoot.noWebData4">테스트: <code>cd test-firebase && npm run send</code>로 가짜 데이터 전송 후 확인</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 참고 자료 -->
+      <section class="doc-section" id="references">
+        <h2 data-i18n="docs.references.title">참고 자료</h2>
+
+        <h3 data-i18n="docs.references.adafruit">공식 가이드 (Adafruit)</h3>
+        <ul>
+          <li><a href="https://learn.adafruit.com/adafruit-max31865-rtd-pt100-amplifier/overview" style="color:var(--accent)" data-i18n="docs.references.adafruitOverview">MAX31865 전체 개요</a></li>
+          <li><a href="https://learn.adafruit.com/adafruit-max31865-rtd-pt100-amplifier/assembly" style="color:var(--accent)" data-i18n="docs.references.adafruitAssembly">조립 가이드</a></li>
+          <li><a href="https://learn.adafruit.com/adafruit-max31865-rtd-pt100-amplifier/rtd-wiring-config" style="color:var(--accent)" data-i18n="docs.references.adafruitWiring">배선 & 설정</a></li>
+          <li><a href="https://learn.adafruit.com/adafruit-max31865-rtd-pt100-amplifier/arduino-code" style="color:var(--accent)" data-i18n="docs.references.adafruitCode">Arduino 코드 예제</a></li>
+          <li><a href="https://learn.adafruit.com/adafruit-max31865-rtd-pt100-amplifier/pinouts" style="color:var(--accent)" data-i18n="docs.references.adafruitPinout">핀 배치도</a></li>
+        </ul>
+
+        <h3 data-i18n="docs.references.tutorials">튜토리얼</h3>
+        <ul>
+          <li><a href="https://www.makerguides.com/max31865-rtd-sensor-and-arduino-uno/" style="color:var(--accent)">MakerGuides MAX31865</a></li>
+          <li><a href="https://www.hackster.io/tungbuivn/how-to-correctly-use-max31865-board-with-pt100-or-pt1000-493286" style="color:var(--accent)">Hackster.io MAX31865</a></li>
+          <li><a href="https://curiousscientist.tech/blog/max31865-pt100-rtd" style="color:var(--accent)">Curious Scientist</a></li>
+        </ul>
+
+        <h3 data-i18n="docs.references.firebase">Firebase</h3>
+        <ul>
+          <li><a href="https://console.firebase.google.com/project/fridge-monitor-9a844" style="color:var(--accent)" data-i18n="docs.references.firebaseConsole">Firebase 콘솔</a></li>
+          <li><a href="https://console.firebase.google.com/project/fridge-monitor-9a844/firestore" style="color:var(--accent)" data-i18n="docs.references.firestoreData">Firestore 데이터 확인</a></li>
+        </ul>
+
+        <h3 data-i18n="docs.references.youtube">YouTube 검색 키워드</h3>
+        <ul>
+          <li>"MAX31865 PT100 Arduino wiring"</li>
+          <li>"MAX31865 PT100 ESP32 tutorial"</li>
+          <li>"PT100 온도센서 아두이노"</li>
+        </ul>
+      </section>
+
+
+    </main>
+  </div>
+
+  <script type="module">
+    import { initI18n, setLang } from '/js/i18n.js';
+    import { initSettingsPanel } from '/js/settings.js';
+    import { initTheme, applyTheme } from '/js/theme.js';
+    import { renderBottomTabBar, renderSettingsPanel } from '/js/shared-ui.js';
+    import { initChat } from '/js/chat.js';
+
+    async function initDocs() {
+      await initI18n();
+      initTheme();
+      renderSettingsPanel({ fullSettings: false });
+      renderBottomTabBar('docs');
+      initChat();
+      initSettingsPanel({
+        onThemeChange: (theme) => applyTheme(theme),
+        onLangChange: (lang) => setLang(lang)
+      });
+
+      // 사이드바 active 상태
+      const navLinks = document.querySelectorAll('.nav-link');
+      const sections = document.querySelectorAll('.doc-section');
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            navLinks.forEach(l => l.classList.remove('active'));
+            const active = document.querySelector(`.nav-link[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-80px 0px -60% 0px' });
+
+      sections.forEach(s => observer.observe(s));
+
+      // 모바일 메뉴 토글
+      document.getElementById('menuToggle').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('open');
+      });
+      navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          document.getElementById('sidebar').classList.remove('open');
+        });
+      });
+    }
+
+    initDocs();
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#1e3a5f"/>
+  <!-- 냉장고 -->
+  <rect x="7" y="3" width="14" height="26" rx="2.5" stroke="white" stroke-width="1.8" fill="rgba(255,255,255,0.1)"/>
+  <line x1="7" y1="13" x2="21" y2="13" stroke="white" stroke-width="1.2" opacity="0.6"/>
+  <line x1="18" y1="7.5" x2="18" y2="10.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="18" y1="16" x2="18" y2="20" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- 온도계 -->
+  <rect x="23" y="9" width="4" height="12" rx="2" stroke="#38bdf8" stroke-width="1.2" fill="rgba(56,189,248,0.15)"/>
+  <rect x="24.3" y="14" width="1.4" height="5.5" rx="0.7" fill="#38bdf8"/>
+  <circle cx="25" cy="18.5" r="1.6" fill="#38bdf8"/>
+</svg>

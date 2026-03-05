@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx firebase:*)",
+      "Bash(node:*)",
+      "Bash(cmd:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(npx firebase-tools:*)",
+      "Bash(magick:*)",
+      "Bash(npm install:*)",
+      "Bash(firebase deploy:*)",
+      "WebFetch(domain:dribbble.com)",
+      "WebSearch",
+      "WebFetch(domain:muz.li)",
+      "WebFetch(domain:fuselabcreative.com)",
+      "WebFetch(domain:fridge-monitor-9a844.web.app)",
+      "Bash(powershell:*)",
+      "Bash(powershell.exe:*)"
+    ]
+  }
+}
