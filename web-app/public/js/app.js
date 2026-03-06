@@ -32,6 +32,8 @@ export function showToast(msg, type = 'info') {
   }
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
   toast.textContent = msg;
   toastContainer.appendChild(toast);
   setTimeout(() => toast.remove(), TOAST_DURATION_MS);
@@ -100,10 +102,15 @@ function cacheData(data) {
 function loadCachedData() {
   try {
     const raw = JSON.parse(localStorage.getItem(DATA_CACHE_KEY));
-    if (!raw || !raw.data) return null;
+    if (!raw || !Array.isArray(raw.data) || typeof raw.ts !== 'number') return null;
+    const validated = raw.data.filter(d =>
+      typeof d.temperature === 'number' && !isNaN(d.temperature) &&
+      typeof d.time === 'number' && d.time > 0
+    );
+    if (validated.length === 0) return null;
     return {
       ts: raw.ts,
-      data: raw.data.map(d => ({ ...d, time: new Date(d.time) }))
+      data: validated.map(d => ({ ...d, time: new Date(d.time) }))
     };
   } catch { return null; }
 }
@@ -305,7 +312,7 @@ function updateConnectionUI() {
 
   if (state.isOfflineMode) {
     const cached = loadCachedData();
-    const timeStr = cached ? new Date(cached.ts).toLocaleTimeString() : '';
+    const timeStr = cached ? getRelativeTime(new Date(cached.ts)) : '';
     banner.innerHTML = `<span class="dot dot-off"></span>${t('app.connection.offline', { time: timeStr })}`;
     banner.classList.add('visible');
   } else if (!online) {
@@ -359,6 +366,7 @@ function startRealtimeListener() {
     state.isConnected = true;
     state.isOfflineMode = false;
     updateConnectionUI();
+    const MAX_DATA_SIZE = 5000;
     state.allData = [];
     snapshot.forEach(doc => {
       const d = doc.data();
@@ -369,6 +377,9 @@ function startRealtimeListener() {
         device_id: d.device_id
       });
     });
+    if (state.allData.length > MAX_DATA_SIZE) {
+      state.allData.length = MAX_DATA_SIZE;
+    }
     console.log('[App] onSnapshot received:', state.allData.length, 'docs');
     cacheData(state.allData);
     try { render(); } catch (e) { console.error('[App] render() error:', e); }
@@ -393,23 +404,6 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 0 ${end.x} ${end.y}`;
 }
 
-
-// ===== 숫자 카운트업 =====
-function animateValue(el, from, to, duration) {
-  if (from === to) return;
-  const start = performance.now();
-  const diff = to - from;
-  function step(now) {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-    // ease-out cubic
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = from + diff * eased;
-    el.textContent = current.toFixed(1) + '°';
-    if (progress < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
 
 // ===== 데이터 스토리텔링 =====
 function generateStorySummary(filtered, settings) {
@@ -792,9 +786,9 @@ function render() {
   const historySlice = filtered.slice(0, state.historyLimit);
   const showDateSeparator = state.currentPeriod >= 72;
   let lastDateStr = '';
-  let historyHTML = '';
   let itemIndex = 0;
 
+  const historyFrag = document.createDocumentFragment();
   for (const d of historySlice) {
     const dt = getThresholdsForDevice(settings, d.device_id);
     const isItemAlert = d.alert || (settings.alertEnabled && (d.temperature > dt.alertHigh || d.temperature < dt.alertLow));
@@ -803,23 +797,40 @@ function render() {
       const dateStr = d.time.toLocaleDateString(locale, { month: 'short', day: 'numeric', weekday: 'short' });
       if (dateStr !== lastDateStr) {
         lastDateStr = dateStr;
-        historyHTML += `<div class="history-date-separator">${dateStr}</div>`;
+        const sep = document.createElement('div');
+        sep.className = 'history-date-separator';
+        sep.textContent = dateStr;
+        historyFrag.appendChild(sep);
       }
     }
 
     const timeText = d.time.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dotClass = getDeviceDotClass(d.device_id);
     const deviceText = d.device_id ? esc(d.device_id) : '';
-    const alertClass = isItemAlert ? ' history-item-alert' : '';
-    const staggerStyle = itemIndex < 10 ? ` stagger-in" style="animation-delay:${itemIndex * 30}ms` : '';
 
-    historyHTML += `<div class="history-item${alertClass}${staggerStyle}">
-      <span class="history-time"><span class="device-dot ${dotClass}"></span>${timeText}${deviceText ? ' · ' + deviceText : ''}</span>
-      <span class="history-temp" style="color: ${isItemAlert ? '#f87171' : 'var(--text-primary)'}">${toDisplayTemp(d.temperature, settings).toFixed(2)} ${unit}</span>
-    </div>`;
+    const item = document.createElement('div');
+    item.className = 'history-item' + (isItemAlert ? ' history-item-alert' : '') + (itemIndex < 10 ? ' stagger-in' : '');
+    if (itemIndex < 10) item.style.animationDelay = `${itemIndex * 30}ms`;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'history-time';
+    const dot = document.createElement('span');
+    dot.className = `device-dot ${dotClass}`;
+    timeSpan.appendChild(dot);
+    timeSpan.appendChild(document.createTextNode(timeText + (deviceText ? ' · ' + deviceText : '')));
+
+    const tempSpan = document.createElement('span');
+    tempSpan.className = 'history-temp';
+    tempSpan.style.color = isItemAlert ? '#f87171' : 'var(--text-primary)';
+    tempSpan.textContent = `${toDisplayTemp(d.temperature, settings).toFixed(2)} ${unit}`;
+
+    item.appendChild(timeSpan);
+    item.appendChild(tempSpan);
+    historyFrag.appendChild(item);
     itemIndex++;
   }
-  historyList.innerHTML = historyHTML;
+  historyList.innerHTML = '';
+  historyList.appendChild(historyFrag);
 
   const moreBtn = document.getElementById('r-history-more');
   if (filtered.length > state.historyLimit) {
@@ -864,7 +875,9 @@ function exportCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `fridge_data_${new Date().toISOString().slice(0,10)}.csv`;
+  const now = new Date();
+  const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  a.download = `fridge_data_${localDate}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   showToast(t('toast.csvExported'), 'success');

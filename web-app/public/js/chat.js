@@ -9,6 +9,7 @@ const PRESENCE_INTERVAL = 60000;
 const PRESENCE_STALE = 120000;
 const TYPING_DEBOUNCE = 3000;
 const TYPING_EXPIRE = 4000;
+const SEND_COOLDOWN_MS = 2000;
 
 const ADJECTIVES = ['행복한', '용감한', '빠른', '조용한', '귀여운', '씩씩한', '느긋한', '밝은', '재빠른', '든든한'];
 const ANIMALS = ['펭귄', '고래', '토끼', '부엉이', '다람쥐', '돌고래', '판다', '수달', '여우', '코알라'];
@@ -25,6 +26,7 @@ let unsubPresence = null;
 let typingTimeout = null;
 let lastTypingWrite = 0;
 let unsubTyping = null;
+let lastSendTime = 0;
 
 // ===== 닉네임 자동 생성 =====
 function generateNickname() {
@@ -42,13 +44,17 @@ function ensureNickname() {
 
 // ===== Auth =====
 function waitForAuth() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (auth.currentUser) {
       resolve(auth.currentUser);
       return;
     }
+    const timeout = setTimeout(() => {
+      unsub();
+      reject(new Error('Auth timeout'));
+    }, 15000);
     const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) { unsub(); resolve(user); }
+      if (user) { clearTimeout(timeout); unsub(); resolve(user); }
     });
     setTimeout(() => {
       if (!auth.currentUser) {
@@ -154,6 +160,7 @@ function renderChatPanel() {
     <div class="chat-input-area">
       <input type="text" class="chat-input" id="chatInput"
              placeholder="${t('chat.placeholder') || ''}"
+             aria-label="${t('chat.placeholder') || 'Message'}"
              maxlength="500" autocomplete="off">
       <button class="chat-send" id="chatSend" data-i18n="chat.send">${t('chat.send') || '전송'}</button>
     </div>`;
@@ -173,8 +180,8 @@ function renderChatPanel() {
     input.focus();
     input.select();
     const save = () => {
-      const val = input.value.trim();
-      if (val && val.length <= 20) {
+      const val = input.value.trim().replace(/[<>"'&\\]/g, '');
+      if (val && val.length >= 1 && val.length <= 20) {
         nickname = val;
         localStorage.setItem(NICKNAME_KEY, nickname);
       }
@@ -211,14 +218,36 @@ function openChat() {
 
   const container = document.getElementById('chatMessages');
   container.scrollTop = container.scrollHeight;
+
+  // 포커스 트랩
+  const panel = document.getElementById('chatPanel');
+  panel._focusTrap = (e) => {
+    if (e.key !== 'Tab') return;
+    const focusable = panel.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  };
+  panel.addEventListener('keydown', panel._focusTrap);
 }
 
 function closeChat() {
   chatOpen = false;
-  document.getElementById('chatPanel').classList.remove('open');
+  const panel = document.getElementById('chatPanel');
+  panel.classList.remove('open');
+  if (panel._focusTrap) {
+    panel.removeEventListener('keydown', panel._focusTrap);
+    panel._focusTrap = null;
+  }
   const fab = document.getElementById('chatFab');
   fab.classList.remove('hidden');
   fab.setAttribute('aria-pressed', 'false');
+  fab.focus();
 }
 
 // ===== Firestore 리스너 =====
@@ -248,6 +277,7 @@ function startChatListener() {
     // 첫 스냅샷은 전체 렌더링, 이후에는 증분 업데이트
     if (isFirstSnapshot) {
       container.innerHTML = '';
+      const frag = document.createDocumentFragment();
       let lastDateStr = '';
       snapshot.forEach((docSnap) => {
         const msg = docSnap.data();
@@ -255,12 +285,13 @@ function startChatListener() {
           const msgDate = msg.created_at.toDate();
           const dateStr = formatDateSeparator(msgDate);
           if (dateStr !== lastDateStr) {
-            container.appendChild(createDateSeparator(dateStr));
+            frag.appendChild(createDateSeparator(dateStr));
             lastDateStr = dateStr;
           }
         }
-        container.appendChild(createMessageBubble(msg, docSnap.id));
+        frag.appendChild(createMessageBubble(msg, docSnap.id));
       });
+      container.appendChild(frag);
       isFirstSnapshot = false;
     } else {
       const changes = snapshot.docChanges();
@@ -330,6 +361,9 @@ async function sendMessage() {
   const sendBtn = document.getElementById('chatSend');
   const text = input.value.trim();
   if (!text || text.length > 500 || isSending) return;
+  const now = Date.now();
+  if (now - lastSendTime < SEND_COOLDOWN_MS) return;
+  lastSendTime = now;
 
   if (!currentUid) {
     console.warn('[Chat] Not authenticated');
@@ -344,6 +378,7 @@ async function sendMessage() {
 
   // 타이핑 인디케이터 정리
   if (typingTimeout) clearTimeout(typingTimeout);
+  lastTypingWrite = 0;
   deleteDoc(doc(db, 'typing', currentUid)).catch(() => {});
 
   try {
@@ -469,22 +504,21 @@ async function runChatCleanup() {
   }
 }
 
-// ===== 오래된 Presence 정리 =====
-async function cleanupStalePresence() {
+// ===== 자기 자신의 오래된 Presence 정리 =====
+async function cleanupOwnStalePresence() {
+  if (!currentUid) return;
   try {
-    const q = query(collection(db, 'presence'));
-    const snapshot = await getDocs(q);
-    const now = Date.now();
-    const staleThreshold = 10 * 60 * 1000; // 10분
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
+    const presenceRef = doc(db, 'presence', currentUid);
+    const presenceSnap = await getDoc(presenceRef);
+    if (presenceSnap.exists()) {
+      const data = presenceSnap.data();
       if (data.last_seen) {
         const lastSeen = data.last_seen.toDate().getTime();
-        if (now - lastSeen > staleThreshold) {
-          deleteDoc(docSnap.ref).catch(() => {});
+        if (Date.now() - lastSeen > 10 * 60 * 1000) {
+          await deleteDoc(presenceRef);
         }
       }
-    });
+    }
   } catch { /* ignore */ }
 }
 
@@ -499,12 +533,28 @@ export async function initChat() {
     if (e.key === 'Escape' && chatOpen) closeChat();
   });
 
-  const user = await waitForAuth();
+  let user;
+  try {
+    user = await waitForAuth();
+  } catch (err) {
+    console.warn('[Chat] Auth timeout, chat disabled:', err);
+    return;
+  }
   currentUid = user.uid;
+
+  // 익명 인증 세션 만료 처리
+  onAuthStateChanged(auth, (u) => {
+    if (!u) {
+      console.warn('[Chat] Auth session expired, re-authenticating...');
+      signInAnonymously(auth).catch(err => console.error('[Chat] Re-auth failed:', err));
+    } else {
+      currentUid = u.uid;
+    }
+  });
 
   startChatListener();
   startPresence();
   startTypingListener();
   runChatCleanup();
-  cleanupStalePresence();
+  cleanupOwnStalePresence();
 }

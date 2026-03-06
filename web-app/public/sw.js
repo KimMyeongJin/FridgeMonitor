@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3.1.0';
+const CACHE_VERSION = 'v3.3.0';
 const CACHE_NAME = `fridge-monitor-${CACHE_VERSION}`;
 const ASSETS = [
   '/',
@@ -19,6 +19,7 @@ const ASSETS = [
   '/js/chat.js',
   '/js/i18n.js',
   '/js/shared-ui.js',
+  '/js/firebase-config.js',
   '/locales/ko.json',
   '/locales/en.json',
   '/icons/icon-192.png',
@@ -78,9 +79,11 @@ self.addEventListener('fetch', (e) => {
       .catch(() => {
         return caches.match(e.request).then(cached => {
           if (cached) return cached;
-          // 문서 요청인 경우 메인 페이지로 폴백
           if (e.request.destination === 'document') {
-            return caches.match('/index.html');
+            // 요청한 페이지의 캐시를 먼저 시도, 없으면 index.html 폴백
+            const pathname = url.pathname;
+            const pagePath = pathname.endsWith('/') ? pathname + 'index.html' : pathname;
+            return caches.match(pagePath).then(page => page || caches.match('/index.html'));
           }
           return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
         });

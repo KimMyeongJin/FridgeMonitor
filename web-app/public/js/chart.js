@@ -85,9 +85,8 @@ export function drawChart(data, periodHours = 24) {
   const chartW = w - padding.left - padding.right;
   const chartH = h - padding.top - padding.bottom;
 
-  // ARIA 접근성
+  // ARIA 접근성 - 데이터 포함
   canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', `${t('app.chart.title') || 'Temperature chart'}, ${periodHours}h`);
 
   const rawSorted = [...data].reverse();
   const sorted = downsample(rawSorted, MAX_CHART_POINTS);
@@ -98,11 +97,17 @@ export function drawChart(data, periodHours = 24) {
   const dispHigh = toDisplayTemp(thresholds.alertHigh, settings);
   const dispLow = toDisplayTemp(thresholds.alertLow, settings);
 
-  let minVal = Infinity, maxVal = -Infinity;
+  let minVal = Infinity, maxVal = -Infinity, tempSum = 0;
   for (const v of temps) {
     if (v < minVal) minVal = v;
     if (v > maxVal) maxVal = v;
+    tempSum += v;
   }
+  const avgVal = temps.length > 0 ? tempSum / temps.length : 0;
+  canvas.setAttribute('aria-label',
+    `${t('app.chart.title') || 'Temperature chart'}, ${periodHours}h, ` +
+    `Min: ${minVal.toFixed(1)}°, Avg: ${avgVal.toFixed(1)}°, Max: ${maxVal.toFixed(1)}°`
+  );
   if (settings.alertEnabled && settings.showThresholdLines) {
     minVal = Math.min(minVal, dispLow);
     maxVal = Math.max(maxVal, dispHigh);
@@ -234,6 +239,10 @@ export function drawChart(data, periodHours = 24) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
+  // 이전 이미지 데이터 참조 해제
+  if (chartMeta && chartMeta.imageData) {
+    chartMeta.imageData = null;
+  }
   // 호버용 이미지 데이터 저장
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
@@ -338,7 +347,12 @@ function handleChartHoverFromEvent(e) {
   const unitStr = settings.tempUnit === 'F' ? '°F' : '°C';
   const locale = getLocale();
   const timeStr = d.time.toLocaleTimeString(locale, { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  tip.innerHTML = `<strong>${dispTemp.toFixed(2)}${unitStr}</strong><br>${timeStr}`;
+  tip.textContent = '';
+  const strong = document.createElement('strong');
+  strong.textContent = `${dispTemp.toFixed(2)}${unitStr}`;
+  tip.appendChild(strong);
+  tip.appendChild(document.createElement('br'));
+  tip.appendChild(document.createTextNode(timeStr));
   tip.classList.add('visible');
 
   const tipX = Math.min(Math.max(x - 40, 0), rect.width - 100);

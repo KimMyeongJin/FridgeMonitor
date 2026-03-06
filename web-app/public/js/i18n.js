@@ -28,7 +28,23 @@ export function applyI18n() {
     el.textContent = t(el.getAttribute('data-i18n'));
   });
   document.querySelectorAll('[data-i18n-html]').forEach(el => {
-    el.innerHTML = t(el.getAttribute('data-i18n-html'));
+    const raw = t(el.getAttribute('data-i18n-html'));
+    const tmp = document.createElement('div');
+    tmp.innerHTML = raw;
+    tmp.querySelectorAll('script,iframe,object,embed,form,base,meta,link').forEach(n => n.remove());
+    const dangerousAttrs = ['href', 'src', 'action', 'formaction', 'xlink:href'];
+    tmp.querySelectorAll('*').forEach(n => {
+      for (const attr of [...n.attributes]) {
+        if (attr.name.startsWith('on')) {
+          n.removeAttribute(attr.name);
+        } else if (dangerousAttrs.includes(attr.name.toLowerCase())) {
+          if (/^\s*javascript\s*:/i.test(attr.value)) {
+            n.removeAttribute(attr.name);
+          }
+        }
+      }
+    });
+    el.innerHTML = tmp.innerHTML;
   });
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     el.title = t(el.getAttribute('data-i18n-title'));

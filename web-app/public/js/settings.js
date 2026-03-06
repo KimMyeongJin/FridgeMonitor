@@ -72,17 +72,37 @@ export function initSettingsPanel(options = {}) {
   const overlay = document.getElementById('settingsOverlay');
   if (!panel || !overlay) return;
 
+  let settingsFocusTrap = null;
+
   function open() {
     panel.classList.add('open');
     overlay.classList.add('open');
     syncUI();
     const firstInput = panel.querySelector('input, button:not(.settings-close)');
     if (firstInput) firstInput.focus();
+
+    settingsFocusTrap = (e) => {
+      if (e.key !== 'Tab') return;
+      const focusable = panel.querySelectorAll('button, input, select, [tabindex]:not([tabindex="-1"])');
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    panel.addEventListener('keydown', settingsFocusTrap);
   }
 
   function close() {
     panel.classList.remove('open');
     overlay.classList.remove('open');
+    if (settingsFocusTrap) {
+      panel.removeEventListener('keydown', settingsFocusTrap);
+      settingsFocusTrap = null;
+    }
     const s = readFromUI();
     saveSettings(s);
     if (onClose) onClose(s);
